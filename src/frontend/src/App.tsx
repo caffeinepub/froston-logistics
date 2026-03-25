@@ -1,7 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, MapPin, Menu, Phone, Snowflake, X } from "lucide-react";
+import {
+  CheckCircle,
+  Mail,
+  MapPin,
+  Menu,
+  Phone,
+  Snowflake,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 const LOGO_URL =
@@ -78,6 +86,12 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [form, setForm] = useState({ name: "", company: "", message: "" });
+  const [errors, setErrors] = useState({
+    name: false,
+    company: false,
+    message: false,
+  });
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.add("dark");
@@ -89,6 +103,30 @@ export default function App() {
   const scrollTo = (id: string) => {
     setMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors = {
+      name: form.name.trim() === "",
+      company: form.company.trim() === "",
+      message: form.message.trim() === "",
+    };
+    setErrors(newErrors);
+    if (newErrors.name || newErrors.company || newErrors.message) return;
+
+    const subject = encodeURIComponent(
+      `Enquiry from ${form.name} - ${form.company}`,
+    );
+    const body = encodeURIComponent(form.message);
+    window.location.href = `mailto:support@froston.co.in?subject=${subject}&body=${body}`;
+    setSubmitted(true);
+  };
+
+  const resetForm = () => {
+    setForm({ name: "", company: "", message: "" });
+    setErrors({ name: false, company: false, message: false });
+    setSubmitted(false);
   };
 
   const navLinks = [
@@ -499,74 +537,131 @@ export default function App() {
               >
                 Send Us a Message
               </h3>
-              <form
-                data-ocid="contact.form"
-                className="flex flex-col gap-5"
-                onSubmit={(e) => e.preventDefault()}
-              >
-                <div>
-                  <label
-                    htmlFor="contact-name"
-                    className="block text-sm font-medium text-muted-foreground mb-2"
-                  >
-                    Your Name
-                  </label>
-                  <Input
-                    id="contact-name"
-                    data-ocid="contact.name.input"
-                    placeholder="John Doe"
-                    value={form.name}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, name: e.target.value }))
-                    }
-                    className="bg-secondary border-border"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="contact-company"
-                    className="block text-sm font-medium text-muted-foreground mb-2"
-                  >
-                    Company
-                  </label>
-                  <Input
-                    id="contact-company"
-                    data-ocid="contact.company.input"
-                    placeholder="Your Company"
-                    value={form.company}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, company: e.target.value }))
-                    }
-                    className="bg-secondary border-border"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="contact-message"
-                    className="block text-sm font-medium text-muted-foreground mb-2"
-                  >
-                    Message
-                  </label>
-                  <Textarea
-                    id="contact-message"
-                    data-ocid="contact.message.textarea"
-                    placeholder="Tell us about your logistics needs..."
-                    rows={5}
-                    value={form.message}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, message: e.target.value }))
-                    }
-                    className="bg-secondary border-border resize-none"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  data-ocid="contact.submit.button"
-                  className="btn-primary border-0 rounded-full font-heading font-semibold py-3 text-base w-full"
+
+              {submitted ? (
+                <div
+                  data-ocid="contact.success_state"
+                  className="flex flex-col items-center justify-center gap-5 py-10 text-center"
                 >
-                  Send Message
-                </Button>
-              </form>
+                  <CheckCircle size={56} className="text-green-400" />
+                  <p className="text-lg font-semibold text-foreground">
+                    Message opened in your email client!
+                  </p>
+                  <p className="text-muted-foreground text-sm">
+                    We&apos;ll get back to you soon.
+                  </p>
+                  <Button
+                    type="button"
+                    data-ocid="contact.send_another.button"
+                    onClick={resetForm}
+                    className="btn-primary border-0 rounded-full font-heading font-semibold py-3 px-8 text-base mt-2"
+                  >
+                    Send Another
+                  </Button>
+                </div>
+              ) : (
+                <form
+                  data-ocid="contact.form"
+                  className="flex flex-col gap-5"
+                  onSubmit={handleFormSubmit}
+                >
+                  <div>
+                    <label
+                      htmlFor="contact-name"
+                      className="block text-sm font-medium text-muted-foreground mb-2"
+                    >
+                      Your Name
+                    </label>
+                    <Input
+                      id="contact-name"
+                      data-ocid="contact.name.input"
+                      placeholder="John Doe"
+                      value={form.name}
+                      onChange={(e) => {
+                        setForm((p) => ({ ...p, name: e.target.value }));
+                        if (errors.name)
+                          setErrors((p) => ({ ...p, name: false }));
+                      }}
+                      className={`bg-secondary border-border ${
+                        errors.name
+                          ? "border-red-500 focus-visible:ring-red-500"
+                          : ""
+                      }`}
+                    />
+                    {errors.name && (
+                      <p className="text-red-400 text-xs mt-1">
+                        Please enter your name.
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="contact-company"
+                      className="block text-sm font-medium text-muted-foreground mb-2"
+                    >
+                      Company
+                    </label>
+                    <Input
+                      id="contact-company"
+                      data-ocid="contact.company.input"
+                      placeholder="Your Company"
+                      value={form.company}
+                      onChange={(e) => {
+                        setForm((p) => ({ ...p, company: e.target.value }));
+                        if (errors.company)
+                          setErrors((p) => ({ ...p, company: false }));
+                      }}
+                      className={`bg-secondary border-border ${
+                        errors.company
+                          ? "border-red-500 focus-visible:ring-red-500"
+                          : ""
+                      }`}
+                    />
+                    {errors.company && (
+                      <p className="text-red-400 text-xs mt-1">
+                        Please enter your company name.
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="contact-message"
+                      className="block text-sm font-medium text-muted-foreground mb-2"
+                    >
+                      Message
+                    </label>
+                    <Textarea
+                      id="contact-message"
+                      data-ocid="contact.message.textarea"
+                      placeholder="Tell us about your logistics needs..."
+                      rows={5}
+                      value={form.message}
+                      onChange={(e) => {
+                        setForm((p) => ({ ...p, message: e.target.value }));
+                        if (errors.message)
+                          setErrors((p) => ({ ...p, message: false }));
+                      }}
+                      className={`bg-secondary border-border resize-none ${
+                        errors.message
+                          ? "border-red-500 focus-visible:ring-red-500"
+                          : ""
+                      }`}
+                    />
+                    {errors.message && (
+                      <p className="text-red-400 text-xs mt-1">
+                        Please enter your message.
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    data-ocid="contact.submit.button"
+                    className="btn-primary border-0 rounded-full font-heading font-semibold py-3 text-base w-full"
+                  >
+                    Send Message
+                  </Button>
+                </form>
+              )}
             </div>
           </div>
         </div>
